@@ -1,0 +1,40 @@
+---
+title: "Titanic"
+output: html_notebook
+---
+#Analiza univariata
+
+##Age
+```{r}
+# Mean
+mean(data$Age, na.rm = TRUE)
+```
+```{r}
+# Median
+median(data$Age, na.rm = TRUE)
+```
+```{r}
+x <- na.omit(data$Age)
+h<-hist(x, breaks = 80, col = "grey", xlab="Age", main="Age Histogram")
+xfit<-seq(min(x),max(x),length=40) 
+yfit<-dnorm(xfit,mean=mean(x),sd=sd(x)) 
+yfit <- yfit*diff(h$mids[1:2])*length(x) 
+lines(xfit, yfit, col="red", lwd=3)
+```
+
+##Sex
+```{r}
+sexFrequency = table(data$Sex)
+ylim <- c(0, 1.2*max(sexFrequency))
+b = barplot(sexFrequency, main = "Sex frequency", ylim = ylim, xlab="Sex", ylab = "Frequency")
+text(x = b, y = sexFrequency, label = sexFrequency, pos = 3, col = "blue")
+```
+##Ticket class
+```{r}
+classFrequency = table(data$Pclass)
+ylim <- c(0, 1.2*max(classFrequency))
+b = barplot(classFrequency, main = "Ticket class frequency", ylim = ylim, xlab="Ticket class", ylab = "Frequency")
+text(x = b, y = classFrequency, label = classFrequency, pos = 3, col = "blue")
+
+```
+
