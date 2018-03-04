@@ -2,7 +2,12 @@
 title: "Titanic"
 output: html_notebook
 ---
+
 #Analiza univariata
+##Data shape
+```{r}
+summary(data)
+```
 
 ##Age
 ```{r}
@@ -70,3 +75,89 @@ ylim <- c(0, 1.2*max(classFrequency))
 b = barplot(classFrequency, main = "Survival frequency", ylim = ylim, xlab="Survived", ylab = "Frequency")
 text(x = b, y = classFrequency, label = classFrequency, pos = 3, col = "blue")
 ```
+
+#Analiza bivariata
+
+## Scatter plot fare vs age
+```{r}
+plot(data$Fare, data$Age, xlab = 'Fare', ylab = 'Age')
+```
+## Correlation test fare vs age
+```{r}
+cor.test(data$Age, data$Fare, method = 'pearson')
+```
+## Scatter plot fare vs class
+```{r}
+plot(data$Fare, data$Pclass, xlab = 'Fare', ylab = 'Age')
+```
+
+## Correlation test fare vs class
+```{r}
+cor.test(data$Fare, data$Pclass, method = 'pearson')
+```
+
+## plot age vs sex
+```{r}
+ggplot(data, aes(Age, fill = Sex)) +
+  geom_histogram(alpha = 0.5, aes(y = ..count..))
+
+```
+## Correlation test age vs sex
+```{r}
+ t.test(Age ~ Sex, data = data)
+```
+
+## plot class vs sex
+```{r}
+ggplot(data, aes(Pclass, fill = Sex)) +
+  geom_bar(alpha = 0.5, aes(y = ..count..))
+
+```
+
+## Correlation test class vs sex
+```{r}
+ t.test(Pclass ~ Sex, data = data)
+```
+
+## mosaicplot survival vs class
+```{r}
+mosaicplot(
+  data$Pclass ~ data$Survived,
+  main = "Passenger Fate by Traveling Class",
+  shade = FALSE,
+  color = TRUE,
+  xlab = "Passenger Class",
+  ylab = "Survived"
+)
+
+```
+## Correlation test survival vs class
+```{r}
+ t.test(Pclass ~ Survived, data = data)
+```
+## mosaicplot survival vs sex
+```{r}
+mosaicplot(
+  data$Sex ~ data$Survived,
+  main = "Passenger Fate by Sex",
+  shade = FALSE,
+  color = TRUE,
+  xlab = "Sex",
+  ylab = "Survived"
+)
+
+```
+## Correlation test survival vs sex
+```{r}
+ #Ar trebui sa folosim fisher test
+```
+## Age vs survival
+```{r}
+ggplot(data, aes(x=Age)) + geom_density(aes(color=Survived))
+```
+
+##Boxplot survived vs age
+```{r}
+boxplot(data$Age~data$Survived,main="Proportion of Survivors by Age", col=c('darkseagreen4','salmon4'), xlab="Survived", ylab="Age") 
+```
+
