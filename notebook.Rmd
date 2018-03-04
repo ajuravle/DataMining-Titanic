@@ -32,9 +32,41 @@ text(x = b, y = sexFrequency, label = sexFrequency, pos = 3, col = "blue")
 ##Ticket class
 ```{r}
 classFrequency = table(data$Pclass)
+names(classFrequency) = c("1st","2nd","3rd")
 ylim <- c(0, 1.2*max(classFrequency))
 b = barplot(classFrequency, main = "Ticket class frequency", ylim = ylim, xlab="Ticket class", ylab = "Frequency")
 text(x = b, y = classFrequency, label = classFrequency, pos = 3, col = "blue")
 
 ```
 
+##Fare
+```{r}
+# Mean
+mean(data$Fare, na.rm = TRUE)
+```
+```{r}
+# Median
+median(data$Fare, na.rm = TRUE)
+```
+```{r}
+x <- na.omit(data$Fare)
+hist(x, breaks = 100, col = "grey", xlab="Fare ($)", main="Fare Histogram")
+```
+
+##Port of Embarkation
+```{r}
+classFrequency = table(data$Embarked)
+names(classFrequency) = c('Uknown', 'Cherbourg', 'Queenstown', 'Southampton')
+ylim <- c(0, 1.2*max(classFrequency))
+b = barplot(classFrequency, main = "Port of Embarkation frequency", ylim = ylim, xlab="Ticket class", ylab = "Frequency")
+text(x = b, y = classFrequency, label = classFrequency, pos = 3, col = "blue")
+```
+
+##Survival
+```{r}
+classFrequency = table(data$Survived)
+names(classFrequency) = c("No","Yes")
+ylim <- c(0, 1.2*max(classFrequency))
+b = barplot(classFrequency, main = "Survival frequency", ylim = ylim, xlab="Survived", ylab = "Frequency")
+text(x = b, y = classFrequency, label = classFrequency, pos = 3, col = "blue")
+```
