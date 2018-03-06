@@ -96,7 +96,7 @@ plot(data$Fare, data$Pclass, xlab = 'Fare', ylab = 'Age')
 cor.test(data$Fare, data$Pclass, method = 'pearson')
 ```
 
-## plot age vs sex
+## Plot age vs sex
 ```{r}
 ggplot(data, aes(Age, fill = Sex)) +
   geom_histogram(alpha = 0.5, aes(y = ..count..))
@@ -107,7 +107,7 @@ ggplot(data, aes(Age, fill = Sex)) +
  t.test(Age ~ Sex, data = data)
 ```
 
-## plot class vs sex
+## Plot class vs sex
 ```{r}
 ggplot(data, aes(Pclass, fill = Sex)) +
   geom_bar(alpha = 0.5, aes(y = ..count..))
@@ -119,7 +119,7 @@ ggplot(data, aes(Pclass, fill = Sex)) +
  t.test(Pclass ~ Sex, data = data)
 ```
 
-## mosaicplot survival vs class
+## Mosaicplot survival vs class
 ```{r}
 mosaicplot(
   data$Pclass ~ data$Survived,
@@ -135,7 +135,13 @@ mosaicplot(
 ```{r}
  t.test(Pclass ~ Survived, data = data)
 ```
-## mosaicplot survival vs sex
+
+## Correlation test survival vs class
+```{r}
+fisher.test(data$Survived, data$Pclass)
+```
+
+## Mosaicplot survival vs sex
 ```{r}
 mosaicplot(
   data$Sex ~ data$Survived,
@@ -149,15 +155,33 @@ mosaicplot(
 ```
 ## Correlation test survival vs sex
 ```{r}
- #Ar trebui sa folosim fisher test
+fisher.test(data$Survived, data$Sex)
 ```
 ## Age vs survival
 ```{r}
 ggplot(data, aes(x=Age)) + geom_density(aes(color=Survived))
 ```
 
-##Boxplot survived vs age
+## Boxplot survived vs age
 ```{r}
 boxplot(data$Age~data$Survived,main="Proportion of Survivors by Age", col=c('darkseagreen4','salmon4'), xlab="Survived", ylab="Age") 
+```
+
+## Mosaicplot survival vs port of embarked
+```{r}
+mosaicplot(
+  data$Embarked ~ data$Survived,
+  main = "Passenger Fate by Port of embarked",
+  shade = FALSE,
+  color = TRUE,
+  xlab = "Port of embarked",
+  ylab = "Survived"
+)
+
+```
+
+## Correlation test survival vs port of embarked
+```{r}
+fisher.test(data$Survived, data$Embarked)
 ```
 
