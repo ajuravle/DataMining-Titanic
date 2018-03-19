@@ -1,5 +1,5 @@
 ---
-title: "Titanic"
+title: "Titanic arules"
 output: html_notebook
 ---
 

@@ -1,0 +1,57 @@
+---
+title: "Titanic - Association Rules Mining "
+output: html_notebook
+---
+
+## Load data
+```{r}
+library(arules)
+library(arulesViz)
+
+titanic = read.csv("train.csv", header = TRUE)
+titanic<- data.frame(sapply(titanic,as.factor))
+```
+
+## Get rules
+```{r}
+rules <- apriori(titanic)
+inspect(rules)
+```
+
+## Get rules -> Survived
+```{r}
+rules <- apriori(titanic,parameter=list(minlen=2, supp=0.005, conf=0.8),appearance=list(rhs=c("Survived=0", "Survived=1"),default="lhs"),control=list(verbose=F))
+rules.sorted <- sort(rules, by="lift")
+inspect(rules.sorted)
+```
+
+## Find redundant rules
+```{r}
+subset.matrix <- is.subset(rules.sorted, rules.sorted, sparse = FALSE)
+subset.matrix[lower.tri(subset.matrix, diag=T)] <- NA
+redundant <- colSums(subset.matrix, na.rm=T) >= 1
+which(redundant)
+```
+
+## Remove redundant rules
+```{r}
+rules.pruned <- rules.sorted[!redundant]
+inspect(rules.pruned)
+```
+
+## Rules - Plot 1
+```{r}
+plot(rules.pruned)
+```
+
+## Rules - Plot 2
+```{r}
+
+plot(rules.pruned, method="graph", control=list(type="items"))
+```
+
+## Rules - Plot 3
+```{r}
+plot(rules, method="paracoord", control=list(reorder=TRUE))
+```
+
