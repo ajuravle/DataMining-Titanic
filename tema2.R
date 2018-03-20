@@ -26,6 +26,6 @@ inspect(rules.pruned)
 
 plot(rules.pruned)
 
-plot(rules.pruned, method="graph", control=list(type="items"))
+plot(rules.pruned[1:100], method="graph", control=list(type="items"))
 
-plot(rules, method="paracoord", control=list(reorder=TRUE))
+plot(rules.pruned[1:50], method="paracoord", control=list(reorder=TRUE))

@@ -15,14 +15,14 @@ titanic<- data.frame(sapply(titanic,as.factor))
 ## Get rules
 ```{r}
 rules <- apriori(titanic)
-inspect(rules)
+inspect(rules[1:20])
 ```
 
 ## Get rules -> Survived
 ```{r}
 rules <- apriori(titanic,parameter=list(minlen=2, supp=0.005, conf=0.8),appearance=list(rhs=c("Survived=0", "Survived=1"),default="lhs"),control=list(verbose=F))
 rules.sorted <- sort(rules, by="lift")
-inspect(rules.sorted)
+inspect(rules.sorted[1:20])
 ```
 
 ## Find redundant rules
@@ -30,28 +30,56 @@ inspect(rules.sorted)
 subset.matrix <- is.subset(rules.sorted, rules.sorted, sparse = FALSE)
 subset.matrix[lower.tri(subset.matrix, diag=T)] <- NA
 redundant <- colSums(subset.matrix, na.rm=T) >= 1
-which(redundant)
+which(redundant[1:20])
 ```
 
 ## Remove redundant rules
 ```{r}
 rules.pruned <- rules.sorted[!redundant]
-inspect(rules.pruned)
+inspect(rules.pruned[1:20])
 ```
 
-## Rules - Plot 1
+## Rules - Plot
 ```{r}
 plot(rules.pruned)
 ```
 
-## Rules - Plot 2
+## Rules - Graph 10
 ```{r}
 
-plot(rules.pruned, method="graph", control=list(type="items"))
+plot(rules.pruned[1:10], method="graph", control=list(type="items"))
 ```
 
-## Rules - Plot 3
+## Rules - Graph 20
 ```{r}
-plot(rules, method="paracoord", control=list(reorder=TRUE))
+
+plot(rules.pruned[1:20], method="graph", control=list(type="items"))
+```
+
+## Rules - Graph 50
+```{r}
+
+plot(rules.pruned[1:50], method="graph", control=list(type="items"))
+```
+
+## Rules - Graph 100
+```{r}
+
+plot(rules.pruned[1:100], method="graph", control=list(type="items"))
+```
+
+## Rules - Paracoord 10
+```{r}
+plot(rules.pruned[1:10], method="paracoord", control=list(reorder=TRUE))
+```
+
+## Rules - Paracoord 20
+```{r}
+plot(rules.pruned[1:20], method="paracoord", control=list(reorder=TRUE))
+```
+
+## Rules - Paracoord 50
+```{r}
+plot(rules.pruned[1:50], method="paracoord", control=list(reorder=TRUE))
 ```
 
