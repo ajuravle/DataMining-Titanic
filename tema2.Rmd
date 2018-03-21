@@ -9,6 +9,9 @@ library(arules)
 library(arulesViz)
 
 titanic = read.csv("train.csv", header = TRUE)
+titanic$Age <- cut(titanic$Age, breaks = c(0,10,20,30,40,60,max(titanic$Age)),labels = c("0-10","10-20","30-40","40-60","60+"), include.lowest = TRUE)
+titanic$Fare <- cut(titanic$Fare, breaks = c(0,5,10,15,max(titanic$Fare)),labels = c("0-5","5-10","10-15","15+"), include.lowest = TRUE)
+titanic$Ticket <- NULL
 titanic<- data.frame(sapply(titanic,as.factor))
 ```
 
@@ -24,7 +27,12 @@ rules <- apriori(titanic,parameter=list(minlen=2, supp=0.005, conf=0.8),appearan
 rules.sorted <- sort(rules, by="lift")
 inspect(rules.sorted[1:20])
 ```
-
+## Get rules -> Not Survived
+```{r}
+rules <- apriori(titanic,parameter=list(minlen=2, supp=0.005, conf=0.8),appearance=list(rhs=c("Survived=0", "Survived=1"),default="lhs"),control=list(verbose=F))
+rules.sorted <- sort(rules, by="confidence")
+inspect(rules.sorted[1:20])
+```
 ## Find redundant rules
 ```{r}
 subset.matrix <- is.subset(rules.sorted, rules.sorted, sparse = FALSE)
@@ -37,6 +45,34 @@ which(redundant[1:20])
 ```{r}
 rules.pruned <- rules.sorted[!redundant]
 inspect(rules.pruned[1:20])
+```
+## Rules regarding age
+```{r}
+load("./titanic.raw.rdata")
+
+rules <- apriori(titanic.raw, control = list(verbose=F),
+                 parameter = list(minlen=3, supp=0.002, conf=0.2),
+                 appearance = list(default="none", rhs=c("Survived=Yes"),
+                                   lhs=c("Class=1st", "Class=2nd", "Class=3rd",
+                                         "Age=Child", "Age=Adult")))
+rules.sorted <- sort(rules, by="confidence")
+inspect(rules.sorted)
+```
+## Example of redundant rule
+```{r}
+# rules with rhs containing "Survived" only
+rules <- apriori(titanic.raw,
+control = list(verbose=F),
+parameter = list(minlen=2, supp=0.005, conf=0.8),
+appearance = list(rhs=c("Survived=No",
+"Survived=Yes"),
+default="lhs"))
+## keep three decimal places
+quality(rules) <- round(quality(rules), digits=3)
+## order rules by lift
+rules.sorted <- sort(rules, by="lift")
+
+inspect(rules.sorted[1:2])
 ```
 
 ## Rules - Plot
