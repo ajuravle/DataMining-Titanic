@@ -1,15 +1,10 @@
 library(rattle)
 library(rpart.plot)
 library(RColorBrewer)
+library(e1071)
+library(class)
 
 train <- read.csv("input_files/train.csv")
 test <- read.csv("input_files/test.csv")
 
-decision_tree <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
-             data=train,
-             method="class")
-fancyRpartPlot(decision_tree)
-
-decision_tree_prediction <- predict(decision_tree, newdata = test, type = "class")
-decision_tree_solution <- data.frame(PassengerId = test$PassengerId, Survived = decision_tree_prediction)
-write.csv(decision_tree_solution, file="decision_tree_solution.csv", row.names = FALSE)
+knn_titanic <-knn(train[, -1], test[, -1], train[, 1], k = 5)
