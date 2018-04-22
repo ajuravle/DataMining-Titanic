@@ -9,3 +9,7 @@ decision_tree <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Em
              data=train,
              method="class")
 fancyRpartPlot(decision_tree)
+
+decision_tree_prediction <- predict(decision_tree, newdata = test, type = "class")
+decision_tree_solution <- data.frame(PassengerId = test$PassengerId, Survived = decision_tree_prediction)
+write.csv(decision_tree_solution, file="decision_tree_solution.csv", row.names = FALSE)
