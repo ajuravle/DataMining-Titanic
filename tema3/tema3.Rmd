@@ -16,9 +16,48 @@ library(xgboost)
 train <- read.csv("../input_files/train.csv")
 test <- read.csv("../input_files/test.csv")
 
+#
+full  <- bind_rows(train, test)
+
+# Extract title from name
+full$Title <- gsub('(.*, )|(\\..*)', '', full$Name)
+rare_title <- c('Dona', 'Lady', 'the Countess','Capt', 'Col', 'Don', 
+                'Dr', 'Major', 'Rev', 'Sir', 'Jonkheer')
+full$Title[full$Title == 'Mlle']        <- 'Miss' 
+full$Title[full$Title == 'Ms']          <- 'Miss'
+full$Title[full$Title == 'Mme']         <- 'Mrs' 
+full$Title[full$Title %in% rare_title]  <- 'Rare Title'
+
+# Extract Surname from Name
+full$Surname <- sapply(full$Name,  
+                       function(x) strsplit(as.character(x), split = '[,.]')[[1]][1])
+
+# Create a family size variable including the passenger themselves
+full$Fsize <- full$SibSp + full$Parch + 1
+
+# Create a family variable 
+full$Family <- paste(full$Surname, full$Fsize, sep='_')
+
+# Discretize family size
+full$FsizeD[full$Fsize == 1] <- 'singleton'
+full$FsizeD[full$Fsize < 5 & full$Fsize > 1] <- 'small'
+full$FsizeD[full$Fsize > 4] <- 'large'
+
+# Create a Deck variable. Get passenger deck A - F:
+full$Deck<-factor(sapply(full$Cabin, function(x) strsplit(as.character(x), NULL)[[1]][1]))
+
+full$Child[full$Age < 18] <- 'Child'
+full$Child[full$Age >= 18] <- 'Adult'
+full$Mother <- 'Not Mother'
+full$Mother[full$Sex == 'female' & full$Parch > 0 & full$Age > 18 & full$Title != 'Miss'] <- 'Mother'
+
+train <- full[1:891,]
+test <- full[892:1309,]
+#
+
 # Remove Name, Ticket and Cabin columns
 train <- train[,-c(4,9,11)]
-test <- test[,-c(3,8,10)]
+test <- test[,-c(4,9,11)]
 
 # Change Sex to 0 = male, 1 = female
 train$Sex <- sapply(as.character(train$Sex), switch, 'male' = 0, 'female' = 1)
@@ -36,7 +75,7 @@ test$Age[is.na(test$Age)] <- mean(test$Age,na.rm=T)
 test$Fare[is.na(test$Fare)] <- mean(test$Fare,na.rm=T)
 ```
 
-## Arbori de decizie
+## Arbori de decizie 1
 ```{r}
 decision_tree <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
              data=train,
@@ -47,6 +86,19 @@ decision_tree_prediction <- predict(decision_tree, newdata = test, type = "class
 decision_tree_solution <- data.frame(PassengerId = test$PassengerId, Survived = decision_tree_prediction)
 write.csv(decision_tree_solution, file="../tema3/solutions/decision_tree_solution.csv", row.names = FALSE)
 ```
+
+## Arbori de decizie 2
+```{r}
+decision_tree <- rpart(Survived ~ Pclass + Sex + Fare + Embarked + Title + Child + Mother + Fsize,
+             data=train,
+             method="class")
+fancyRpartPlot(decision_tree)
+
+decision_tree_prediction <- predict(decision_tree, newdata = test, type = "class",  control=rpart.control(minsplit=3, cp=0.05))
+decision_tree_solution <- data.frame(PassengerId = test$PassengerId, Survived = decision_tree_prediction)
+write.csv(decision_tree_solution, file="../tema3/solutions/decision_tree_solution.csv", row.names = FALSE)
+```
+
 
 ## Bayes naiv
 ```{r}
@@ -117,7 +169,7 @@ svm <- svm(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
              gamma=1)
 
 svm_prediction <- predict(svm, newdata = test)
-svm_prediction
+svm_prediction <- as.numeric(svm_prediction > 0.5)
 svm_solution <- data.frame(PassengerId = test$PassengerId, Survived = svm_prediction)
 write.csv(svm_solution, file="../tema3/solutions/svm_solution.csv", row.names = FALSE)
 ```

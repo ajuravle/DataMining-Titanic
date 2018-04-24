@@ -5,34 +5,44 @@ library(e1071)
 library(class)
 library(randomForest)
 library(xgboost)
-library(neuralnet)
+library('dplyr')
 
 train <- read.csv("input_files/train.csv")
 test <- read.csv("input_files/test.csv")
 
-# Remove Name, Ticket and Cabin columns
-train <- train[,-c(4,9,11)]
-test <- test[,-c(3,8,10)]
+full  <- bind_rows(train, test)
 
-# Change Sex to 0 = male, 1 = female
-train$Sex <- sapply(as.character(train$Sex), switch, 'male' = 0, 'female' = 1)
-test$Sex <- sapply(as.character(test$Sex), switch, 'male' = 0, 'female' = 1)
+# Extract title from name
+full$Title <- gsub('(.*, )|(\\..*)', '', full$Name)
+rare_title <- c('Dona', 'Lady', 'the Countess','Capt', 'Col', 'Don', 
+                'Dr', 'Major', 'Rev', 'Sir', 'Jonkheer')
+full$Title[full$Title == 'Mlle']        <- 'Miss' 
+full$Title[full$Title == 'Ms']          <- 'Miss'
+full$Title[full$Title == 'Mme']         <- 'Mrs' 
+full$Title[full$Title %in% rare_title]  <- 'Rare Title'
 
-# Change Embarked column to 0 = 'C', 1 = 'Q', 2 = 'S' and remove NAs
-train$Embarked[train$Embarked == ''] <- 'S'
-train$Embarked <- sapply(as.character(train$Embarked), switch, 'C' = 0, 'Q' = 1, 'S' = 2)
-test$Embarked <- sapply(as.character(test$Embarked), switch, 'C' = 0, 'Q' = 1, 'S' = 2)
+# Extract Surname from Name
+full$Surname <- sapply(full$Name,  
+                       function(x) strsplit(as.character(x), split = '[,.]')[[1]][1])
 
-# Remove NAs from Age and Fare columns
-train$Age[is.na(train$Age)] <- mean(train$Age,na.rm=T)
-train$Fare[is.na(train$Fare)] <- mean(train$Fare,na.rm=T)
-test$Age[is.na(test$Age)] <- mean(test$Age,na.rm=T)
-test$Fare[is.na(test$Fare)] <- mean(test$Fare,na.rm=T)
+# Create a family size variable including the passenger themselves
+full$Fsize <- full$SibSp + full$Parch + 1
 
-model <- model.matrix(~ Survived + Pclass + Sex+ Age + Fare + SibSp,data = train)
-neural_network <- neuralnet( 
-  Survived ~ Pclass + Sex+ Age + Fare + SibSp, data=model, hidden=2, threshold=0.01, linear.output = F)
-plot(neural_network)
+# Create a family variable 
+full$Family <- paste(full$Surname, full$Fsize, sep='_')
 
-model_test <- model.matrix(~ Pclass + Sex+ Age + Fare + SibSp,data = test)
-res <- neuralnet::compute(neural_network, model_test[,c("Pclass","Sexmale","Age", "Fare","SibSp")])
+# Discretize family size
+full$FsizeD[full$Fsize == 1] <- 'singleton'
+full$FsizeD[full$Fsize < 5 & full$Fsize > 1] <- 'small'
+full$FsizeD[full$Fsize > 4] <- 'large'
+
+# Create a Deck variable. Get passenger deck A - F:
+full$Deck<-factor(sapply(full$Cabin, function(x) strsplit(as.character(x), NULL)[[1]][1]))
+
+full$Child[full$Age < 18] <- 'Child'
+full$Child[full$Age >= 18] <- 'Adult'
+full$Mother <- 'Not Mother'
+full$Mother[full$Sex == 'female' & full$Parch > 0 & full$Age > 18 & full$Title != 'Miss'] <- 'Mother'
+
+train <- full[1:891,]
+test <- full[892:1309,]
