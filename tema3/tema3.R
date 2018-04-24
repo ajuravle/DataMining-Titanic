@@ -3,9 +3,12 @@ library(rpart.plot)
 library(RColorBrewer)
 library(e1071)
 library(class)
+library(randomForest)
+library(xgboost)
+library(neuralnet)
 
-train <- read.csv("../input_files/train.csv")
-test <- read.csv("../input_files/test.csv")
+train <- read.csv("input_files/train.csv")
+test <- read.csv("input_files/test.csv")
 
 # Remove Name, Ticket and Cabin columns
 train <- train[,-c(4,9,11)]
@@ -21,16 +24,15 @@ train$Embarked <- sapply(as.character(train$Embarked), switch, 'C' = 0, 'Q' = 1,
 test$Embarked <- sapply(as.character(test$Embarked), switch, 'C' = 0, 'Q' = 1, 'S' = 2)
 
 # Remove NAs from Age and Fare columns
-train_age <- na.omit(train$Age)
-train_age_avg <- mean(train_age)
-train$Age[is.na(train$Age)] <- train_age_avg
+train$Age[is.na(train$Age)] <- mean(train$Age,na.rm=T)
+train$Fare[is.na(train$Fare)] <- mean(train$Fare,na.rm=T)
+test$Age[is.na(test$Age)] <- mean(test$Age,na.rm=T)
+test$Fare[is.na(test$Fare)] <- mean(test$Fare,na.rm=T)
 
-test_age <- na.omit(test$Age)
-test_age_avg <- mean(test_age)
-test$Age[is.na(test$Age)] <- test_age_avg
+model <- model.matrix(~ Survived + Pclass + Sex+ Age + Fare + SibSp,data = train)
+neural_network <- neuralnet( 
+  Survived ~ Pclass + Sex+ Age + Fare + SibSp, data=model, hidden=2, threshold=0.01, linear.output = F)
+plot(neural_network)
 
-test_fare <- na.omit(test$Fare)
-test_fare_avg <- mean(test_fare)
-test$Fare[is.na(test$Fare)] <- test_fare_avg
-
-#random_forest <- randomForest(train[,-c(1,2)])
+model_test <- model.matrix(~ Pclass + Sex+ Age + Fare + SibSp,data = test)
+res <- neuralnet::compute(neural_network, model_test[,c("Pclass","Sexmale","Age", "Fare","SibSp")])

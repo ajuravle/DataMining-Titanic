@@ -10,6 +10,8 @@ library(rpart.plot)
 library(RColorBrewer)
 library(e1071)
 library(class)
+library(randomForest)
+library(xgboost)
 
 train <- read.csv("../input_files/train.csv")
 test <- read.csv("../input_files/test.csv")
@@ -28,17 +30,10 @@ train$Embarked <- sapply(as.character(train$Embarked), switch, 'C' = 0, 'Q' = 1,
 test$Embarked <- sapply(as.character(test$Embarked), switch, 'C' = 0, 'Q' = 1, 'S' = 2)
 
 # Remove NAs from Age and Fare columns
-train_age <- na.omit(train$Age)
-train_age_avg <- mean(train_age)
-train$Age[is.na(train$Age)] <- train_age_avg
-
-test_age <- na.omit(test$Age)
-test_age_avg <- mean(test_age)
-test$Age[is.na(test$Age)] <- test_age_avg
-
-test_fare <- na.omit(test$Fare)
-test_fare_avg <- mean(test_fare)
-test$Fare[is.na(test$Fare)] <- test_fare_avg
+train$Age[is.na(train$Age)] <- mean(train$Age,na.rm=T)
+train$Fare[is.na(train$Fare)] <- mean(train$Fare,na.rm=T)
+test$Age[is.na(test$Age)] <- mean(test$Age,na.rm=T)
+test$Fare[is.na(test$Fare)] <- mean(test$Fare,na.rm=T)
 ```
 
 ## Arbori de decizie
@@ -75,7 +70,7 @@ write.csv(knn_solution, file="../tema3/solutions/knn_solution.csv", row.names = 
 
 ## Random forest
 ```{r}
-random_forest <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+svm <- svm(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
                               data=train, 
                               importance=TRUE, 
                               ntree=100)
@@ -84,4 +79,45 @@ random_forest
 random_forest_prediction <- predict(random_forest, newdata = test,  type = "class")
 random_forest_solution <- data.frame(PassengerId = test$PassengerId, Survived = random_forest_prediction)
 write.csv(random_forest_solution, file="../tema3/solutions/random_forest_solution.csv", row.names = FALSE)
+```
+
+## xgBoost
+```{r}
+dtrain <- xgb.DMatrix(data =  as.matrix(train[,-c(1,2)]), label = train$Survived)
+dtest <- xgb.DMatrix(data =  as.matrix(test[,-1]))
+boost <- xgboost(data = dtrain, max.depth = 10, eta=1, nthread = 2, nround = 5, objective = "binary:logistic")
+
+boost_prediction <- predict(boost, newdata = dtest,  type = "class")
+
+boost_prediction <- as.numeric(boost_prediction > 0.5)
+boost_solution <- data.frame(PassengerId = test$PassengerId, Survived = boost_prediction)
+write.csv(boost_solution, file="../tema3/solutions/boost_solution.csv", row.names = FALSE)
+```
+
+## Neural network
+```{r}
+model <- model.matrix(~ Survived + Pclass + Sex+ Age + Fare + SibSp,data = train)
+neural_network <- neuralnet( 
+  Survived ~ Pclass + Sex+ Age + Fare + SibSp, data=model, hidden=2, threshold=0.01, linear.output = F)
+plot(neural_network)
+
+model_test <- model.matrix(~ Pclass + Sex+ Age + Fare + SibSp,data = test)
+res <- neuralnet::compute(neural_network, model_test[,c("Pclass","Sex","Age", "Fare","SibSp")])
+nn_prediction = round(res$net.result)
+
+nn_solution <- data.frame(PassengerId = test$PassengerId, Survived = nn_prediction)
+write.csv(nn_solution, file="../tema3/solutions/nn_solution.csv", row.names = FALSE)
+```
+
+## SVM
+```{r}
+svm <- svm(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+             data=train,
+             cost=100,
+             gamma=1)
+
+svm_prediction <- predict(svm, newdata = test)
+svm_prediction
+svm_solution <- data.frame(PassengerId = test$PassengerId, Survived = svm_prediction)
+write.csv(svm_solution, file="../tema3/solutions/svm_solution.csv", row.names = FALSE)
 ```
