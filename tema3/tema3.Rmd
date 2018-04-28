@@ -12,11 +12,13 @@ library(e1071)
 library(class)
 library(randomForest)
 library(xgboost)
+library(neuralnet)
+library('dplyr')
+library(caret)
 
 train <- read.csv("../input_files/train.csv")
 test <- read.csv("../input_files/test.csv")
 
-#
 full  <- bind_rows(train, test)
 
 # Extract title from name
@@ -28,36 +30,15 @@ full$Title[full$Title == 'Ms']          <- 'Miss'
 full$Title[full$Title == 'Mme']         <- 'Mrs' 
 full$Title[full$Title %in% rare_title]  <- 'Rare Title'
 
-# Extract Surname from Name
-full$Surname <- sapply(full$Name,  
-                       function(x) strsplit(as.character(x), split = '[,.]')[[1]][1])
-
 # Create a family size variable including the passenger themselves
 full$Fsize <- full$SibSp + full$Parch + 1
 
-# Create a family variable 
-full$Family <- paste(full$Surname, full$Fsize, sep='_')
-
-# Discretize family size
-full$FsizeD[full$Fsize == 1] <- 'singleton'
-full$FsizeD[full$Fsize < 5 & full$Fsize > 1] <- 'small'
-full$FsizeD[full$Fsize > 4] <- 'large'
-
-# Create a Deck variable. Get passenger deck A - F:
-full$Deck<-factor(sapply(full$Cabin, function(x) strsplit(as.character(x), NULL)[[1]][1]))
-
-full$Child[full$Age < 18] <- 'Child'
-full$Child[full$Age >= 18] <- 'Adult'
-full$Mother <- 'Not Mother'
-full$Mother[full$Sex == 'female' & full$Parch > 0 & full$Age > 18 & full$Title != 'Miss'] <- 'Mother'
-
 train <- full[1:891,]
 test <- full[892:1309,]
-#
 
 # Remove Name, Ticket and Cabin columns
 train <- train[,-c(4,9,11)]
-test <- test[,-c(4,9,11)]
+test <- test[,-c(2,4,9,11)]
 
 # Change Sex to 0 = male, 1 = female
 train$Sex <- sapply(as.character(train$Sex), switch, 'male' = 0, 'female' = 1)
@@ -75,101 +56,256 @@ test$Age[is.na(test$Age)] <- mean(test$Age,na.rm=T)
 test$Fare[is.na(test$Fare)] <- mean(test$Fare,na.rm=T)
 ```
 
-## Arbori de decizie 1
+## Arbori de decizie
 ```{r}
-decision_tree <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
-             data=train,
-             method="class")
-fancyRpartPlot(decision_tree)
+model <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + Title + Fsize,
+                      data = train, method = "class", 
+                      control=rpart.control(minsplit=124, cp=0.0078, maxcompete=113))
 
-decision_tree_prediction <- predict(decision_tree, newdata = test, type = "class",  control=rpart.control(minsplit=2, cp=0.005))
-decision_tree_solution <- data.frame(PassengerId = test$PassengerId, Survived = decision_tree_prediction)
-write.csv(decision_tree_solution, file="../tema3/solutions/decision_tree_solution.csv", row.names = FALSE)
-```
+predict <- predict(object = model, newdata = train, type = "class")
+fancyRpartPlot(model)
 
-## Arbori de decizie 2
-```{r}
-decision_tree <- rpart(Survived ~ Pclass + Sex + Fare + Embarked + Title + Child + Mother + Fsize,
-             data=train,
-             method="class")
-fancyRpartPlot(decision_tree)
+confusionMatrix(predict, as.factor(train$Survived))
 
-decision_tree_prediction <- predict(decision_tree, newdata = test, type = "class",  control=rpart.control(minsplit=3, cp=0.05))
-decision_tree_solution <- data.frame(PassengerId = test$PassengerId, Survived = decision_tree_prediction)
-write.csv(decision_tree_solution, file="../tema3/solutions/decision_tree_solution.csv", row.names = FALSE)
+prediction <- predict(model, newdata = test, type = "class")
+solution <- data.frame(PassengerId = test$PassengerId, Survived = prediction)
+write.csv(solution, file="../tema3/solutions/decision_tree_solution33.csv", row.names = FALSE)
+
+accuracies <- c()
+recalls <- c()
+precissions <- c()
+folds <- createFolds(train$Survived, k = 5, list = TRUE, returnTrain = TRUE)
+for (i in 1:5) {
+  model <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + Title + Fsize, 
+                 data = train[folds[[i]],], method = "class", 
+                 control=rpart.control(minsplit=124, cp=0.0078, maxcompete=113))
+  prediction <- predict(object = model, newdata = train[-folds[[i]],], type = "class")
+  accuracies <- c(accuracies, confusionMatrix(prediction, as.factor(train[-folds[[i]], ]$Survived))$overall[[1]])
+  cm = as.matrix(table(prediction, train[-folds[[i]], ]$Survived))
+  precissions <- c(precissions, cm[2,2] / sum(cm[,2]))
+  recalls <- c(recalls, cm[2,2] / sum(cm[2,]))
+}
+
+paste("Accuracy: ", mean(accuracies))
+paste("Precission: ", mean(precissions))
+paste("Recall: ", mean(recalls))
 ```
 
 
 ## Bayes naiv
 ```{r}
-naive_bayes <- naiveBayes(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
-                       data=train,
-                       method="class")
-#str(naive_bayes)
-summary(naive_bayes)
+model <- naiveBayes(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+                    data=train,
+                    method="class")
 
-naive_bayes_prediction <- predict(decision_tree, newdata = test,  type = "class")
-naive_bayes_solution <- data.frame(PassengerId = test$PassengerId, Survived = naive_bayes_prediction)
-write.csv(naive_bayes_solution, file="../tema3/solutions/naive_bayes_solution.csv", row.names = FALSE)
+predict <- suppressWarnings(predict(object = model, newdata = train, type = "class"))
+confusionMatrix(predict, as.factor(train$Survived))
+
+prediction <- suppressWarnings(predict(model, newdata = test, type = "class"))
+solution <- data.frame(PassengerId = test$PassengerId, Survived = prediction)
+write.csv(solution, file="../tema3/solutions/naive_bayes_solution.csv", row.names = FALSE)
+
+accuracies <- c()
+recalls <- c()
+precissions <- c()
+folds <- createFolds(train$Survived, k = 5, list = TRUE, returnTrain = TRUE)
+for (i in 1:5) {
+  model <- naiveBayes(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+                      data=train[folds[[i]],],
+                      method="class")
+  prediction <- suppressWarnings(predict(object = model, newdata = train[-folds[[i]],], type = "class"))
+  accuracies <- c(accuracies, confusionMatrix(prediction, as.factor(train[-folds[[i]], ]$Survived))$overall[[1]])
+  cm = as.matrix(table(prediction, train[-folds[[i]], ]$Survived))
+  precissions <- c(precissions, cm[2,2] / sum(cm[,2]))
+  recalls <- c(recalls, cm[2,2] / sum(cm[2,]))
+}
+
+paste("Accuracy: ", mean(accuracies))
+paste("Precission: ", mean(precissions))
+paste("Recall: ", mean(recalls))
 ```
 
 ## KNN
 ```{r}
-knn <- knn(train[,-c(1,2)], test[,-1], train$Survived, k = 5,  l = 0, prob = FALSE, use.all = TRUE)
-knn_solution <- data.frame(PassengerId = test$PassengerId, Survived = knn)
-write.csv(knn_solution, file="../tema3/solutions/knn_solution.csv", row.names = FALSE)
+prediction <- knn(train[,-c(1,2,10,11)], train[,-c(1,2,10,11)], train$Survived, k = 10,  l = 0, prob = FALSE, use.all = TRUE)
+confusionMatrix(predict, as.factor(train$Survived))
+
+prediction <- knn(train[,-c(1,2,10,11)], test[,-c(1,9,10)], train$Survived, k = 10,  l = 0, prob = FALSE, use.all = TRUE)
+solution <- data.frame(PassengerId = test$PassengerId, Survived = prediction)
+write.csv(solution, file="../tema3/solutions/knn_solution.csv", row.names = FALSE)
+
+accuracies <- c()
+recalls <- c()
+precissions <- c()
+folds <- createFolds(train$Survived, k = 10, list = TRUE, returnTrain = TRUE)
+for (i in 1:5) {
+  prediction <- knn(train[folds[[i]],-c(1,2,10,11)], train[-folds[[i]],-c(1,2,10,11)], train[folds[[i]],]$Survived, k = 5,  l = 0, prob = FALSE, use.all = TRUE)
+  accuracies <- c(accuracies, confusionMatrix(prediction, as.factor(train[-folds[[i]],]$Survived))$overall[[1]])
+  cm = as.matrix(table(prediction, train[-folds[[i]],]$Survived))
+  precissions <- c(precissions, cm[2,2] / sum(cm[,2]))
+  recalls <- c(recalls, cm[2,2] / sum(cm[2,]))
+}
+
+paste("Accuracy: ", mean(accuracies))
+paste("Precission: ", mean(precissions))
+paste("Recall: ", mean(recalls))
 ```
 
 ## Random forest
 ```{r}
-svm <- svm(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+model <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
                               data=train, 
-                              importance=TRUE, 
-                              ntree=100)
-random_forest
+                              ntree=500)
+model
 
-random_forest_prediction <- predict(random_forest, newdata = test,  type = "class")
-random_forest_solution <- data.frame(PassengerId = test$PassengerId, Survived = random_forest_prediction)
-write.csv(random_forest_solution, file="../tema3/solutions/random_forest_solution.csv", row.names = FALSE)
+predict <- predict(object = model, newdata = train, type = "class")
+confusionMatrix(predict, as.factor(train$Survived))
+
+prediction <- predict(model, newdata = test, type = "class")
+solution <- data.frame(PassengerId = test$PassengerId, Survived = prediction)
+write.csv(solution, file="../tema3/solutions/random_forest_solution.csv", row.names = FALSE)
+
+accuracies <- c()
+recalls <- c()
+precissions <- c()
+folds <- createFolds(as.factor(train$Survived), k = 5, list = TRUE, returnTrain = TRUE)
+for (i in 1:5) {
+  model <- randomForest(as.factor(Survived) ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+                        data=train[folds[[i]],], 
+                        ntree=500)
+  
+  prediction <- predict(object = model, newdata = train[-folds[[i]],], type = "class")
+  accuracies <- c(accuracies, confusionMatrix(prediction, as.factor(train[-folds[[i]], ]$Survived))$overall[[1]])
+  cm = as.matrix(table(prediction, train[-folds[[i]], ]$Survived))
+  precissions <- c(precissions, cm[2,2] / sum(cm[,2]))
+  recalls <- c(recalls, cm[2,2] / sum(cm[2,]))
+}
+
+paste("Accuracy: ", mean(accuracies))
+paste("Precission: ", mean(precissions))
+paste("Recall: ", mean(recalls))
 ```
 
 ## xgBoost
 ```{r}
-dtrain <- xgb.DMatrix(data =  as.matrix(train[,-c(1,2)]), label = train$Survived)
-dtest <- xgb.DMatrix(data =  as.matrix(test[,-1]))
-boost <- xgboost(data = dtrain, max.depth = 10, eta=1, nthread = 2, nround = 5, objective = "binary:logistic")
+dtrain <- xgb.DMatrix(data =  as.matrix(train[,-c(1,2,10,11)]), label = train$Survived)
+dtest <- xgb.DMatrix(data =  as.matrix(test[,-c(1,9,10)]))
+model <- xgboost(data = dtrain, max.depth = 10, eta=0.2, nthread = 2, nround = 2, objective = "binary:logistic")
 
-boost_prediction <- predict(boost, newdata = dtest,  type = "class")
+predict <- predict(object = model, newdata = dtrain, type = "class")
+predict <- as.numeric(predict > 0.5)
+confusionMatrix(as.factor(predict), as.factor(train$Survived))
 
-boost_prediction <- as.numeric(boost_prediction > 0.5)
-boost_solution <- data.frame(PassengerId = test$PassengerId, Survived = boost_prediction)
-write.csv(boost_solution, file="../tema3/solutions/boost_solution.csv", row.names = FALSE)
+prediction <- predict(boost, newdata = dtest,  type = "class")
+prediction <- as.numeric(prediction > 0.5)
+solution <- data.frame(PassengerId = test$PassengerId, Survived = prediction)
+write.csv(solution, file="../tema3/solutions/boost_solution.csv", row.names = FALSE)
+
+dtrain <- xgb.DMatrix(data =  as.matrix(train[,-c(1,2,10,11)]), label = train$Survived)
+model <- xgboost(data = dtrain, max.depth = 10, eta=0.2, nthread = 2, nround = 2, objective = "binary:logistic")
+
+predict <- predict(object = model, newdata = dtrain, type = "class")
+predict <- as.numeric(predict > 0.5)
+confusionMatrix(as.factor(predict), as.factor(train$Survived))
+
+accuracies <- c()
+recalls <- c()
+precissions <- c()
+folds <- createFolds(train$Survived, k = 5, list = TRUE, returnTrain = TRUE)
+for (i in 1:5) {
+  dtrain <- xgb.DMatrix(data =  as.matrix(train[folds[[i]],-c(1,2,10,11)]), label = train[folds[[i]],]$Survived)
+  dtest <- xgb.DMatrix(data =  as.matrix(train[-folds[[i]],-c(1,2,10,11)]), label = train[-folds[[i]],]$Survived)
+  model <- xgboost(data = dtrain, max.depth = 10, eta=0.2, nthread = 2, nround = 5, objective = "binary:logistic")
+  
+  prediction <- predict(object = model, newdata = dtest, type = "class")
+  prediction <- as.numeric(prediction > 0.5)
+  accuracies <- c(accuracies, confusionMatrix(as.factor(prediction), as.factor(train[-folds[[i]], ]$Survived))$overall[[1]])
+  cm = as.matrix(table(prediction, train[-folds[[i]], ]$Survived))
+  precissions <- c(precissions, cm[2,2] / sum(cm[,2]))
+  recalls <- c(recalls, cm[2,2] / sum(cm[2,]))
+}
+
+paste("Accuracy: ", mean(accuracies))
+paste("Precission: ", mean(precissions))
+paste("Recall: ", mean(recalls))
 ```
 
 ## Neural network
 ```{r}
-model <- model.matrix(~ Survived + Pclass + Sex+ Age + Fare + SibSp,data = train)
+model <- model.matrix(~ Survived + Pclass + Sex+ Age + Fare + SibSp, data = train)
+model_test <- model.matrix(~ Pclass + Sex+ Age + Fare + SibSp, data = test)
+
 neural_network <- neuralnet( 
   Survived ~ Pclass + Sex+ Age + Fare + SibSp, data=model, hidden=2, threshold=0.01, linear.output = F)
 plot(neural_network)
 
-model_test <- model.matrix(~ Pclass + Sex+ Age + Fare + SibSp,data = test)
-res <- neuralnet::compute(neural_network, model_test[,c("Pclass","Sex","Age", "Fare","SibSp")])
-nn_prediction = round(res$net.result)
+predict <- neuralnet::compute(neural_network, model[,c("Pclass","Sex","Age", "Fare","SibSp")])
+predict = round(predict$net.result)
+confusionMatrix(as.factor(predict), as.factor(train$Survived))
 
-nn_solution <- data.frame(PassengerId = test$PassengerId, Survived = nn_prediction)
-write.csv(nn_solution, file="../tema3/solutions/nn_solution.csv", row.names = FALSE)
+prediction <- neuralnet::compute(neural_network, model_test[,c("Pclass","Sex","Age", "Fare","SibSp")])
+prediction = round(prediction$net.result)
+solution <- data.frame(PassengerId = test$PassengerId, Survived = prediction)
+write.csv(solution, file="../tema3/solutions/nn_solution.csv", row.names = FALSE)
+
+accuracies <- c()
+recalls <- c()
+precissions <- c()
+folds <- createFolds(as.factor(train$Survived), k = 5, list = TRUE, returnTrain = TRUE)
+for (i in 1:5) {
+  model <- model.matrix(~ Survived + Pclass + Sex+ Age + Fare + SibSp, data = train[folds[[i]],])
+  model_test <- model.matrix(~ Pclass + Sex+ Age + Fare + SibSp, data = train[-folds[[i]],])
+  neural_network <- neuralnet( 
+    Survived ~ Pclass + Sex+ Age + Fare + SibSp, data=model, hidden=2, threshold=0.01, linear.output = F)
+  prediction <- neuralnet::compute(neural_network, model_test[,c("Pclass","Sex","Age", "Fare","SibSp")])
+  prediction = round(prediction$net.result)
+  
+  accuracies <- c(accuracies, confusionMatrix(as.factor(prediction), as.factor(train[-folds[[i]], ]$Survived))$overall[[1]])
+  cm = as.matrix(table(prediction, train[-folds[[i]], ]$Survived))
+  precissions <- c(precissions, cm[2,2] / sum(cm[,2]))
+  recalls <- c(recalls, cm[2,2] / sum(cm[2,]))
+}
+
+paste("Accuracy: ", mean(accuracies))
+paste("Precission: ", mean(precissions))
+paste("Recall: ", mean(recalls))
 ```
 
 ## SVM
 ```{r}
-svm <- svm(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+model <- svm(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
              data=train,
              cost=100,
              gamma=1)
 
-svm_prediction <- predict(svm, newdata = test)
-svm_prediction <- as.numeric(svm_prediction > 0.5)
-svm_solution <- data.frame(PassengerId = test$PassengerId, Survived = svm_prediction)
-write.csv(svm_solution, file="../tema3/solutions/svm_solution.csv", row.names = FALSE)
+predict <- predict(object = model, newdata = train, type = "class")
+predict <- as.numeric(predict > 0.5)
+confusionMatrix(as.factor(predict), as.factor(train$Survived))
+
+prediction <- predict(svm, newdata = test)
+prediction <- as.numeric(svm_prediction > 0.5)
+solution <- data.frame(PassengerId = test$PassengerId, Survived = prediction)
+write.csv(solution, file="../tema3/solutions/svm_solution.csv", row.names = FALSE)
+
+accuracies <- c()
+recalls <- c()
+precissions <- c()
+folds <- createFolds(as.factor(train$Survived), k = 5, list = TRUE, returnTrain = TRUE)
+for (i in 1:5) {
+  model <- svm(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked,
+               data=train[folds[[i]],],
+               cost=30,
+               gamma=0.3)
+  
+  prediction <- predict(object = model, newdata = train[-folds[[i]],], type = "class")
+  prediction <- as.numeric(prediction > 0.5)
+  accuracies <- c(accuracies, confusionMatrix(as.factor(prediction), as.factor(train[-folds[[i]], ]$Survived))$overall[[1]])
+  cm = as.matrix(table(prediction, train[-folds[[i]], ]$Survived))
+  precissions <- c(precissions, cm[2,2] / sum(cm[,2]))
+  recalls <- c(recalls, cm[2,2] / sum(cm[2,]))
+}
+
+paste("Accuracy: ", mean(accuracies))
+paste("Precission: ", mean(precissions))
+paste("Recall: ", mean(recalls))
 ```
