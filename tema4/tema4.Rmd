@@ -1,0 +1,101 @@
+---
+title: "Analiza prin clasificare nesupervizata"
+output: html_notebook
+---
+
+#Part 2
+
+##Load data
+```{r}
+library(cluster)
+library(fpc)
+library(factoextra)
+library(NbClust)
+
+data <- as.vector(read.table("../tema4/2d-10c.dat", header=F, skip=3))
+data <- data[-3]
+summary(data)
+```
+
+##k-Means
+###Sum of squares
+```{r}
+k.max <- 20
+wss <- sapply(1:k.max, function(k) {
+    kmeans(data, centers = k, nstart = 20)$tot.withinss
+  })
+plot(1:k.max, wss,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K")
+abline(v = 10, lty =2)
+
+kmeans.res <- kmeans(data, centers = 10)
+fviz_cluster(kmeans.res, data = data, geom = "point")
+```
+
+###Sillouette Width
+```{r}
+k.max <- 20
+sil <- rep(0, k.max)
+for(i in 2:k.max){
+  km.res <- kmeans(data, centers = i, nstart = 20, iter.max=30)
+  ss <- silhouette(km.res$cluster, dist(data))
+  sil[i] <- mean(ss[, 3])
+}
+
+plot(1:k.max, sil, type = "b", pch = 19, 
+     frame = FALSE, xlab = "Number of clusters k")
+abline(v = which.max(sil), lty = 2)
+
+kmeans.res <- kmeans(data, centers = which.max(sil))
+fviz_cluster(kmeans.res, data = data, geom = "point")
+```
+
+
+##Hierarchical clustering
+###Sum of squares
+```{r}
+dist.res <- dist(data, method = "euclidean")
+hc <- hclust(dist.res, method = "complete")
+k.max <- 20
+
+wss <- function(d) {
+  sum(scale(d, scale = FALSE)^2)
+}
+
+wrapper <- sapply(1:k.max, function(k) {
+  cl <- cutree(hc, k)
+  spl <- split(data, cl)
+  wss <- sum(sapply(spl, wss))
+  wss
+})
+
+plot(1:k.max, wrapper,
+     type="b", pch = 19, frame = FALSE, 
+     xlab="Number of clusters K")
+abline(v = 5, lty =2)
+
+plot(hc, labels = FALSE, hang = -1)
+rect.hclust(hc, k = 5, border = 2:20)
+```
+
+###Sillouette Width
+```{r}
+dist.res <- dist(data, method = "euclidean")
+hc <- hclust(dist.res, method = "complete")
+k.max <- 20
+sil <- rep(0, k.max)
+
+for(i in 2:k.max){
+  clusters <- cutree(hc, k = i)
+  ss <- silhouette(clusters, dist(data))
+  sil[i] <- mean(ss[, 3])
+}
+
+plot(1:k.max, sil, type = "b", pch = 19, 
+     frame = FALSE, xlab = "Number of clusters k")
+abline(v = which.max(sil), lty = 2)
+
+plot(hc, labels = FALSE, hang = -1)
+rect.hclust(hc, k = which.max(sil), border = 2:20)
+```
