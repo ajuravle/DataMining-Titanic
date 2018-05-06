@@ -3,6 +3,426 @@ title: "Analiza prin clasificare nesupervizata"
 output: html_notebook
 ---
 
+
+#Part 1
+##2d-10c Dataset
+##Load data
+```{r}
+library(dbscan)
+library(cluster)
+library(fpc)
+library(factoextra)
+library(NbClust)
+library(mclust)
+
+data <- as.vector(read.table("../tema4/2d-10c.dat", header=F, skip=3))
+data <- data[-3]
+print(data)
+```
+##Algoritmii ierarhici: single link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "single" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 10, border = 2:20)
+clust <- cutree(hc1, k = 10)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: complete link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "complete" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 10, border = 2:20)
+clust <- cutree(hc1, k = 10)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: average link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "average" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 10, border = 2:20)
+clust <- cutree(hc1, k = 10)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: ward variance
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "ward.D" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 10, border = 2:20)
+clust <- cutree(hc1, k = 10)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##DBscan
+```{r}
+db = dbscan(data,0.5)
+hullplot(data, db$cluster)
+```
+##K-means
+```{r}
+set.seed(7)
+km1 = kmeans(data, 10 , nstart=20)
+kmeans.res <- kmeans(data, centers = 10)
+fviz_cluster(kmeans.res, data = data, geom = "point")
+```
+##EM
+```{r}
+```
+
+##Iris dataset
+##Load data
+```{r}
+library(dbscan)
+library(cluster)
+library(fpc)
+library(factoextra)
+library(NbClust)
+library(mclust)
+
+data <- read.csv(file="../tema4/iris.csv", header=F)
+data <- data[-5]
+print(data)
+```
+##Algoritmii ierarhici: single link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "single" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 10, border = 2:20)
+clust <- cutree(hc1, k = 10)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: complete link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "complete" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 10, border = 2:20)
+clust <- cutree(hc1, k = 10)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: average link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "average" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 10, border = 2:20)
+clust <- cutree(hc1, k = 10)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: ward variance
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "ward.D" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 10, border = 2:20)
+clust <- cutree(hc1, k = 10)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##DBscan
+```{r}
+db = dbscan(data,0.5)
+hullplot(data, db$cluster)
+```
+##K-means
+```{r}
+set.seed(7)
+km1 = kmeans(data, 10 , nstart=20)
+kmeans.res <- kmeans(data, centers = 10)
+fviz_cluster(kmeans.res, data = data, geom = "point")
+```
+##EM
+```{r}
+```
+
+##Long dataset
+##Load data
+```{r}
+library(dbscan)
+library(cluster)
+library(fpc)
+library(factoextra)
+library(NbClust)
+library(mclust)
+
+data <- as.vector(read.table("../tema4/long.data", header=F))
+data <- data[-3]
+print(data)
+```
+##Algoritmii ierarhici: single link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "single" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 10, border = 2:20)
+clust <- cutree(hc1, k = 2)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: complete link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "complete" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 2, border = 2:20)
+clust <- cutree(hc1, k = 2)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: average link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "average" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 2, border = 2:20)
+clust <- cutree(hc1, k = 2)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: ward variance
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "ward.D" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 2, border = 2:20)
+clust <- cutree(hc1, k = 2)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##DBscan
+```{r}
+db = dbscan(data,0.2)
+hullplot(data, db$cluster)
+```
+##K-means
+```{r}
+set.seed(7)
+km1 = kmeans(data, 2 , nstart=20)
+kmeans.res <- kmeans(data, centers = 2)
+fviz_cluster(kmeans.res, data = data, geom = "point")
+```
+##EM
+```{r}
+```
+
+##order2-3clust dataset
+##Load data
+```{r}
+library(dbscan)
+library(cluster)
+library(fpc)
+library(factoextra)
+library(NbClust)
+library(mclust)
+
+data <- read.csv(file="../tema4/order2-3clust.csv", header=F)
+data <- data[-3]
+print(data)
+```
+##Algoritmii ierarhici: single link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "single" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 10, border = 2:20)
+clust <- cutree(hc1, k = 3)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: complete link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "complete" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 3, border = 2:20)
+clust <- cutree(hc1, k = 3)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: average link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "average" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 3, border = 2:20)
+clust <- cutree(hc1, k = 3)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: ward variance
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "ward.D" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 3, border = 2:20)
+clust <- cutree(hc1, k = 3)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##DBscan
+```{r}
+db = dbscan(data,0.2)
+hullplot(data, db$cluster)
+```
+##K-means
+```{r}
+set.seed(7)
+km1 = kmeans(data, 3 , nstart=20)
+kmeans.res <- kmeans(data, centers = 3)
+fviz_cluster(kmeans.res, data = data, geom = "point")
+```
+##EM
+```{r}
+```
+##smile dataset
+##Load data
+```{r}
+library(dbscan)
+library(cluster)
+library(fpc)
+library(factoextra)
+library(NbClust)
+library(mclust)
+
+data <- read.csv(file="../tema4/smile.csv", header=F)
+data <- data[-3]
+print(data)
+```
+##Algoritmii ierarhici: single link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "single" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 4, border = 2:20)
+clust <- cutree(hc1, k = 4)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: complete link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "complete" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 4, border = 2:20)
+clust <- cutree(hc1, k = 4)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: average link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "average" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 4, border = 2:20)
+clust <- cutree(hc1, k = 4)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: ward variance
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "ward.D" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 4, border = 2:20)
+clust <- cutree(hc1, k = 4)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##DBscan
+```{r}
+db = dbscan(data,0.2)
+hullplot(data, db$cluster)
+```
+##K-means
+```{r}
+set.seed(7)
+km1 = kmeans(data, 4 , nstart=20)
+kmeans.res <- kmeans(data, centers = 4)
+fviz_cluster(kmeans.res, data = data, geom = "point")
+```
+##EM
+```{r}
+```
+
+##square dataset
+##Load data
+```{r}
+library(dbscan)
+library(cluster)
+library(fpc)
+library(factoextra)
+library(NbClust)
+library(mclust)
+
+data <- as.vector(read.table("../tema4/square.data", header=F))
+data <- data[-3]
+print(data)
+```
+##Algoritmii ierarhici: single link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "single" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 4, border = 2:20)
+clust <- cutree(hc1, k = 4)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: complete link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "complete" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 4, border = 2:20)
+clust <- cutree(hc1, k = 4)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: average link
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "average" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 4, border = 2:20)
+clust <- cutree(hc1, k = 4)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##Algoritmii ierarhici: ward variance
+```{r}
+d <- dist(data, method = "euclidean")
+hc1 <- hclust(d, method = "ward.D" )
+# Plot the obtained dendrogram
+plot(hc1, cex = 0.6, hang = -1)
+rect.hclust(hc1, k = 4, border = 2:20)
+clust <- cutree(hc1, k = 4)
+fviz_cluster(list(data = data, cluster = clust))
+```
+##DBscan
+```{r}
+db = dbscan(data,0.5)
+hullplot(data, db$cluster)
+```
+##K-means
+```{r}
+set.seed(7)
+km1 = kmeans(data, 4 , nstart=20)
+kmeans.res <- kmeans(data, centers = 4)
+fviz_cluster(kmeans.res, data = data, geom = "point")
+```
+##EM
+```{r}
+```
 #Part 2
 
 ##Load data
