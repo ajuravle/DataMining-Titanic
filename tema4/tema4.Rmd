@@ -6,6 +6,7 @@ output: html_notebook
 
 #Part 1
 ##2d-10c Dataset
+##Best algorithm: hierarchic ward variance
 ##Load data
 ```{r}
 library(dbscan)
@@ -14,6 +15,7 @@ library(fpc)
 library(factoextra)
 library(NbClust)
 library(mclust)
+library(EMCluster, quietly = TRUE)
 
 data <- as.vector(read.table("../tema4/2d-10c.dat", header=F, skip=3))
 data <- data[-3]
@@ -73,9 +75,18 @@ fviz_cluster(kmeans.res, data = data, geom = "point")
 ```
 ##EM
 ```{r}
+set.seed(1234)
+
+emobj <- simple.init(data, nclass = 10)
+emobj <- shortemcluster(data, emobj)
+summary(emobj)
+
+ret <- emcluster(data, emobj, assign.class = TRUE)
+summary(ret)
 ```
 
 ##Iris dataset
+##Best algorithm: average linkage
 ##Load data
 ```{r}
 library(dbscan)
@@ -143,9 +154,18 @@ fviz_cluster(kmeans.res, data = data, geom = "point")
 ```
 ##EM
 ```{r}
+set.seed(1234)
+
+emobj <- simple.init(data, nclass = 10)
+emobj <- shortemcluster(data, emobj)
+summary(emobj)
+
+ret <- emcluster(data, emobj, assign.class = TRUE)
+summary(ret)
 ```
 
 ##Long dataset
+##Best algorithm:DBScan
 ##Load data
 ```{r}
 library(dbscan)
@@ -213,6 +233,14 @@ fviz_cluster(kmeans.res, data = data, geom = "point")
 ```
 ##EM
 ```{r}
+set.seed(1234)
+
+emobj <- simple.init(data, nclass = 2)
+emobj <- shortemcluster(data, emobj)
+summary(emobj)
+
+ret <- emcluster(data, emobj, assign.class = TRUE)
+summary(ret)
 ```
 
 ##order2-3clust dataset
@@ -283,8 +311,17 @@ fviz_cluster(kmeans.res, data = data, geom = "point")
 ```
 ##EM
 ```{r}
+set.seed(1234)
+
+emobj <- simple.init(data, nclass = 3)
+emobj <- shortemcluster(data, emobj)
+summary(emobj)
+
+ret <- emcluster(data, emobj, assign.class = TRUE)
+summary(ret)
 ```
 ##smile dataset
+##Best algorithm: Single linkage
 ##Load data
 ```{r}
 library(dbscan)
@@ -352,9 +389,18 @@ fviz_cluster(kmeans.res, data = data, geom = "point")
 ```
 ##EM
 ```{r}
+set.seed(1234)
+
+emobj <- simple.init(data, nclass = 4)
+emobj <- shortemcluster(data, emobj)
+summary(emobj)
+
+ret <- emcluster(data, emobj, assign.class = TRUE)
+summary(ret)
 ```
 
 ##square dataset
+##Best algorithm: k-means
 ##Load data
 ```{r}
 library(dbscan)
@@ -422,6 +468,14 @@ fviz_cluster(kmeans.res, data = data, geom = "point")
 ```
 ##EM
 ```{r}
+set.seed(1234)
+
+emobj <- simple.init(data, nclass = 4)
+emobj <- shortemcluster(data, emobj)
+summary(emobj)
+
+ret <- emcluster(data, emobj, assign.class = TRUE)
+summary(ret)
 ```
 #Part 2
 
