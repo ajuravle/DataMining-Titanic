@@ -5,6 +5,7 @@ output: html_notebook
 ##SOM on Titanic unnormalized
 ```{r}
 library(som)
+library(kohonen)
 train = read.csv("train.csv", header = TRUE)
 
 # Remove Name, Ticket and Cabin columns
@@ -33,6 +34,40 @@ som_model <- som(data_train,
 plot(som_model, type="changes")
 plot(som_model, type="count", main="Node Counts")
 ```
+
+---
+##SOM on Titanic normalized
+```{r}
+library(som)
+train = read.csv("train.csv", header = TRUE)
+
+# Remove Name, Ticket and Cabin columns
+train <- train[,-c(4,9,11)]
+
+# Change Sex to 0 = male, 1 = female
+train$Sex <- sapply(as.character(train$Sex), switch, 'male' = 0, 'female' = 1)
+
+# Change Embarked column to 0 = 'C', 1 = 'Q', 2 = 'S' and remove NAs
+train$Embarked[train$Embarked == ''] <- 'S'
+train$Embarked <- sapply(as.character(train$Embarked), switch, 'C' = 0, 'Q' = 1, 'S' = 2)
+
+# Remove NAs from Age and Fare columns
+train$Age[is.na(train$Age)] <- mean(train$Age,na.rm=T)
+train$Fare[is.na(train$Fare)] <- mean(train$Fare,na.rm=T)
+train <- normalize(train)
+som_grid <- somgrid(xdim = 20, ydim=20, topo="hexagonal")
+data_train<- as.matrix(scale(train))
+# Finally, train the SOM, options for the number of iterations,
+# the learning rates, and the neighbourhood are available
+som_model <- som(data_train, 
+		grid=som_grid, 
+		rlen=500, 
+		alpha=c(0.05,0.01), 
+		keep.data = TRUE )
+plot(som_model, type="changes")
+plot(som_model, type="count", main="Node Counts")
+```
+
 ##EM on Titanic normalized
 ```{r}
 library(mclust)
@@ -57,6 +92,6 @@ summary(emobj)
 
 ret <- emcluster(data, emobj, assign.class = TRUE)
 summary(ret)
-plot(ret, type="changes")
+
 ```
 
